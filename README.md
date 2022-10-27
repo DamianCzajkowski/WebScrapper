@@ -8,8 +8,9 @@
 ## Menu
 - [ ] Dodanie animacji
 - [X] Dodanie możliwości poruszania się strzałkami
-- [ ] Dodanie możliwości cofania się
+- [X] Dodanie możliwości cofania się
 - [ ] Dodanie możliwości chodzenia po listach i po kliknięciu przejście do detali
+- [ ] Paginacja na listach
   
 ## Produkt
 - [X] Dodawanie produktu

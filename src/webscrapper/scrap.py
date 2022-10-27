@@ -17,8 +17,9 @@ def scrap_product(url: str, shop: Shop) -> ProductModel:
 
     price = soup.find("div", {"class": shop.product_price_class}).get_text()
     float_price = float(price.split("zł")[0].replace(" ", "").replace(",", "."))
-
-    name = soup.find("h1", {"class": shop.product_name_class}).get_text()
+    name = ""
+    if name_class := soup.find("h1", {"class": shop.product_name_class}):
+        name = name_class.get_text()
 
     product = ProductSchema(url=url, price=float_price, name=name, shop_id=shop.id)
     return ProductModel(**product.dict())
