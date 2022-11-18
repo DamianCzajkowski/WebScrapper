@@ -1,6 +1,5 @@
 import curses
 from curses import panel
-import time
 from database import initialize_database
 from service import ProductService, ShopService
 from pydantic import BaseModel
@@ -78,9 +77,16 @@ class WindowSettings(BaseModel):
 
 class Table:
     def __init__(
-        self, get_items, headers: list, edit_function: Callable, delete_function: Callable, settings: WindowSettings
+        self,
+        get_items,
+        headers: list,
+        edit_function: Callable,
+        delete_function: Callable,
+        settings: WindowSettings,
     ):
-        self.window = curses.newwin(settings.nlines, settings.ncols, settings.beginy, settings.beginx)
+        self.window = curses.newwin(
+            settings.nlines, settings.ncols, settings.beginy, settings.beginx
+        )
         self.window.keypad(True)
         self.window.refresh()
 
@@ -119,7 +125,9 @@ class Table:
         else:
             self.position_check = self.position
         if self.position_check >= self.refresh_pad_stop:
-            if (len(self.items) - self.position_check - 1) >= (self.max_items - self.refresh_pad_stop):
+            if (len(self.items) - self.position_check - 1) >= (
+                self.max_items - self.refresh_pad_stop
+            ):
                 self.refresh_pad += n * 2
         if self.position < 0:
             self.position = 0
@@ -129,7 +137,9 @@ class Table:
             self.refresh_pad = (len(self.items) - self.max_items) * 2
 
     def show(self):
-        self.items = self.get_items() if isinstance(self.get_items, Callable) else self.get_items
+        self.items = (
+            self.get_items() if isinstance(self.get_items, Callable) else self.get_items
+        )
         pad = curses.newpad(
             self.row_height * (len(self.items) or 1),
             self.max_cols,
@@ -185,7 +195,12 @@ class Table:
                 new_pad.addstr(3, item[1], item[0], mode)
             new_pad.bkgd(curses.color_pair(2))
             new_pad.refresh(
-                0, 0, curses.LINES // 2 - 5, curses.COLS // 2 - 22, curses.LINES // 2 + 5, curses.COLS // 2 + 40
+                0,
+                0,
+                curses.LINES // 2 - 5,
+                curses.COLS // 2 - 22,
+                curses.LINES // 2 + 5,
+                curses.COLS // 2 + 40,
             )
             self.window.refresh()
             new_key = self.window.getch()
@@ -240,7 +255,9 @@ class Table:
                 for idx, value in enumerate(item):
                     pad.addstr(
                         splitted_y,
-                        round(splitted_x + splitted_x * idx * 2) - len(str(value)) // 2 - 1,
+                        round(splitted_x + splitted_x * idx * 2)
+                        - len(str(value)) // 2
+                        - 1,
                         str(value),
                         mode,
                     )
@@ -261,7 +278,11 @@ class Table:
 
             if key in [curses.KEY_ENTER, ord("\n")]:
                 self.context_menu(self.items[self.position])
-                self.items = self.get_items() if isinstance(self.get_items, Callable) else self.get_items
+                self.items = (
+                    self.get_items()
+                    if isinstance(self.get_items, Callable)
+                    else self.get_items
+                )
 
             elif key == curses.KEY_UP:
                 self.navigate(-1)
@@ -275,8 +296,12 @@ class Table:
 
 
 class ItemDetails:
-    def __init__(self, items: list, settings: WindowSettings, update_function, service, item_id):
-        self.window = curses.newwin(settings.nlines, settings.ncols, settings.beginy, settings.beginx)
+    def __init__(
+        self, items: list, settings: WindowSettings, update_function, service, item_id
+    ):
+        self.window = curses.newwin(
+            settings.nlines, settings.ncols, settings.beginy, settings.beginx
+        )
         self.window.keypad(True)
         self.window.refresh()
         self.window_settings = settings
@@ -310,8 +335,12 @@ class ItemDetails:
             self.position = len(self.items) - 1
 
     def display_string(self, value: str, settings: WindowSettings):
-        name_window = curses.newwin(settings.nlines, settings.ncols, settings.beginy, settings.beginx)
-        edit_name_window = name_window.subwin(settings.nlines, settings.ncols, settings.beginy, settings.beginx)
+        name_window = curses.newwin(
+            settings.nlines, settings.ncols, settings.beginy, settings.beginx
+        )
+        edit_name_window = name_window.subwin(
+            settings.nlines, settings.ncols, settings.beginy, settings.beginx
+        )
 
         name_window.clear()
         name_window.border()
@@ -348,17 +377,27 @@ class ItemDetails:
                     case "STRING":
                         self.window.addstr(start_y, 1, item["title"], mode)
                         start_y += 3
-                        settings = WindowSettings(nlines=3, ncols=60, beginx=2, beginy=start_y)
-                        item["edit_window"] = self.display_string(item["value"], settings)
+                        settings = WindowSettings(
+                            nlines=3, ncols=60, beginx=2, beginy=start_y
+                        )
+                        item["edit_window"] = self.display_string(
+                            item["value"], settings
+                        )
                         start_y += 1
                     case "LIST":
                         self.window.addstr(start_y, 1, item["title"], mode)
                         start_y += 3
-                        settings = WindowSettings(nlines=3, ncols=60, beginx=2, beginy=start_y)
+                        settings = WindowSettings(
+                            nlines=3, ncols=60, beginx=2, beginy=start_y
+                        )
                         if item["value"]["values"]:
                             if not item.get("table"):
                                 item["table"] = Table(
-                                    item["value"]["values"](), item["value"]["headers"], exit, exit, settings
+                                    item["value"]["values"](),
+                                    item["value"]["headers"],
+                                    exit,
+                                    exit,
+                                    settings,
                                 )
                             item["table"].get_items = item["value"]["values"]()
                             item["table"].show()
@@ -372,7 +411,9 @@ class ItemDetails:
                     self.edit_text(self.items[self.position])
                 elif self.items[self.position]["type"] == "LIST":
                     ch = YesNoChoice(
-                        f"What you want to do with {item['title']}", self.service.main_screen, ["Edit", "Add new"]
+                        f"What you want to do with {item['title']}",
+                        self.service.main_screen,
+                        ["Edit", "Add new"],
                     ).display()
                     if ch:
                         self.items[self.position]["function"](self.item_id)
@@ -413,7 +454,10 @@ class YesNoChoice:
 
         while True:
             for index, item in enumerate(
-                [(self.custom_choices[0], 50 // 4 - 1), (self.custom_choices[1], (50 // 4) * 3 - 1)]
+                [
+                    (self.custom_choices[0], 50 // 4 - 1),
+                    (self.custom_choices[1], (50 // 4) * 3 - 1),
+                ]
             ):
                 if index == self.edit_position:
                     mode = curses.A_REVERSE
@@ -421,7 +465,12 @@ class YesNoChoice:
                     mode = curses.A_NORMAL
                 new_pad.addstr(3, item[1], item[0], mode)
             new_pad.refresh(
-                0, 0, curses.LINES // 2 - 5, curses.COLS // 2 - 25, curses.LINES // 2 + 5, curses.COLS // 2 + 40
+                0,
+                0,
+                curses.LINES // 2 - 5,
+                curses.COLS // 2 - 25,
+                curses.LINES // 2 + 5,
+                curses.COLS // 2 + 40,
             )
             self.window.refresh()
             new_key = self.window.getch()
