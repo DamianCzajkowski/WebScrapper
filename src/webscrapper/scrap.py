@@ -14,12 +14,18 @@ def scrap_product(url: str, shop: Shop) -> ProductModel:
 
     response = requests.get(url, headers=header)
     soup = BeautifulSoup(response.content, "lxml")
+    float_price = 0.0
 
-    price = soup.find("div", {"class": shop.product_price_class}).get_text()
-    float_price = float(price.split("zł")[0].replace(" ", "").replace(",", "."))
+    for product_price_class in shop.product_price_classes:
+        if price := soup.find("div", {"class": product_price_class.class_name}):
+            price = price.get_text()
+            float_price = float(price.split("zł")[0].replace(" ", "").replace(",", "."))
     name = ""
-    if name_class := soup.find("h1", {"class": shop.product_name_class}):
-        name = name_class.get_text()
-
-    product = ProductSchema(url=url, price=float_price, name=name, shop_id=shop.id)
+    for product_name_class in shop.product_name_classes:
+        if name_class := soup.find("h1", {"class": product_name_class.class_name}):
+            name = name_class.get_text()
+    # Check if product already exists in database and create a product history
+    product = ProductSchema(
+        url=url, price=float_price, name=name, shop_id=shop.id, shop=shop
+    )
     return ProductModel(**product.dict())
