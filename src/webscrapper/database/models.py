@@ -1,14 +1,6 @@
-from sqlalchemy import (
-    Column,
-    Float,
-    ForeignKey,
-    Integer,
-    String,
-    DateTime,
-    UniqueConstraint,
-)
+from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import backref, relationship
 
 Base = declarative_base()
 
@@ -37,9 +29,7 @@ class ShopProductPriceClass(Base):
     id = Column(Integer, primary_key=True, index=True)
     class_name = Column(String)
     shop_id = Column(Integer, ForeignKey("shop.id", ondelete="CASCADE"))
-    shop = relationship(
-        "Shop", backref=backref("product_price_classes", cascade="all, delete")
-    )
+    shop = relationship("Shop", backref=backref("product_price_classes", cascade="all, delete"))
     __table_args__ = (UniqueConstraint("shop_id", "class_name", name="class_shop_uc"),)
 
 
