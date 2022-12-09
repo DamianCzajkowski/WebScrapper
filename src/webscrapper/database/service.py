@@ -1,18 +1,22 @@
 from datetime import datetime
 from typing import Optional
 
-from schema import Product as ProductSchema
-from schema import ProductHistory as ProductHistorySchema
-from schema import Shop as ShopSchema
-from schema import ShopProductNameClass as ShopProductNameClassSchema
-from schema import ShopProductPriceClass as ShopProductPriceClassSchema
 from sqlalchemy import delete, select, update
 
 from webscrapper.database.models import Product as ProductModel
 from webscrapper.database.models import ProductHistory as ProductHistoryModel
 from webscrapper.database.models import Shop as ShopModel
-from webscrapper.database.models import ShopProductNameClass as ShopProductNameClassModel
-from webscrapper.database.models import ShopProductPriceClass as ShopProductPriceClassModel
+from webscrapper.database.models import (
+    ShopProductNameClass as ShopProductNameClassModel,
+)
+from webscrapper.database.models import (
+    ShopProductPriceClass as ShopProductPriceClassModel,
+)
+from webscrapper.schema import Product as ProductSchema
+from webscrapper.schema import ProductHistory as ProductHistorySchema
+from webscrapper.schema import Shop as ShopSchema
+from webscrapper.schema import ShopProductNameClass as ShopProductNameClassSchema
+from webscrapper.schema import ShopProductPriceClass as ShopProductPriceClassSchema
 from webscrapper.scrapper.scrap import scrap_product
 
 
@@ -42,7 +46,9 @@ class ProductService(AbstractService):
         )
 
     def get_product_details(self, name):
-        product = self.session.scalar(select(ProductModel).where(ProductModel.name == name))
+        product = self.session.scalar(
+            select(ProductModel).where(ProductModel.name == name)
+        )
 
         product_history = self._parse_product_history(product)
 
@@ -57,7 +63,9 @@ class ProductService(AbstractService):
 
     def _parse_product_history(self, product):
         return [
-            ProductHistorySchema(**history.__dict__, product=product, product_id=product.id)
+            ProductHistorySchema(
+                **history.__dict__, product=product, product_id=product.id
+            )
             for history in product.history
         ]
 
@@ -76,13 +84,20 @@ class ProductService(AbstractService):
 
     def delete_product(self, item_id):
         self.session.execute(
-            delete(ProductModel).where(ProductModel.id == item_id).execution_options(synchronize_session="fetch")
+            delete(ProductModel)
+            .where(ProductModel.id == item_id)
+            .execution_options(synchronize_session="fetch")
         )
         self.session.commit()
 
 
 class ShopService(AbstractService):
-    def create_shop(self, shop_name: str, price_classes: Optional[list] = None, name_classes: Optional[list] = None):
+    def create_shop(
+        self,
+        shop_name: str,
+        price_classes: Optional[list] = None,
+        name_classes: Optional[list] = None,
+    ):
         shop = ShopModel(name=shop_name)
         self.session.add(shop)
         if price_classes:
@@ -93,7 +108,9 @@ class ShopService(AbstractService):
                 self.session.add(shop_product_price_class)
         if name_classes:
             for class_name in name_classes:
-                shop_product_name_class = ShopProductNameClassModel(class_name=class_name, shop=shop, shop_id=shop.id)
+                shop_product_name_class = ShopProductNameClassModel(
+                    class_name=class_name, shop=shop, shop_id=shop.id
+                )
                 self.session.add(shop_product_name_class)
         self.session.commit()
 
@@ -101,10 +118,18 @@ class ShopService(AbstractService):
         return self.session.scalar(select(ShopModel).where(ShopModel.id == shop_id))
 
     def get_product_price_class_by_id(self, item_id: int):
-        return self.session.scalar(select(ShopProductPriceClassModel).where(ShopProductPriceClassModel.id == item_id))
+        return self.session.scalar(
+            select(ShopProductPriceClassModel).where(
+                ShopProductPriceClassModel.id == item_id
+            )
+        )
 
     def get_product_name_class_by_id(self, item_id: int):
-        return self.session.scalar(select(ShopProductNameClassModel).where(ShopProductNameClassModel.id == item_id))
+        return self.session.scalar(
+            select(ShopProductNameClassModel).where(
+                ShopProductNameClassModel.id == item_id
+            )
+        )
 
     def _parse_shop(self, shop):
         product_name_classes = self._parse_product_name_classes(shop)
@@ -123,19 +148,25 @@ class ShopService(AbstractService):
 
     def _parse_product_name_classes(self, shop):
         return [
-            ShopProductNameClassSchema(**name_class.__dict__, shop=shop) for name_class in shop.product_name_classes
+            ShopProductNameClassSchema(**name_class.__dict__, shop=shop)
+            for name_class in shop.product_name_classes
         ]
 
     def _parse_product_price_classes(self, shop):
         return [
-            ShopProductPriceClassSchema(**price_class.__dict__, shop=shop) for price_class in shop.product_price_classes
+            ShopProductPriceClassSchema(**price_class.__dict__, shop=shop)
+            for price_class in shop.product_price_classes
         ]
 
     def parse_product_price_class(self, class_price: str, shop: ShopModel):
-        return ShopProductPriceClassModel(class_name=class_price, shop=shop, shop_id=shop.id)
+        return ShopProductPriceClassModel(
+            class_name=class_price, shop=shop, shop_id=shop.id
+        )
 
     def parse_product_name_class(self, class_name: str, shop: ShopModel):
-        return ShopProductNameClassModel(class_name=class_name, shop=shop, shop_id=shop.id)
+        return ShopProductNameClassModel(
+            class_name=class_name, shop=shop, shop_id=shop.id
+        )
 
     def update_shop(self, shop_id, shop_details):
         self.session.execute(

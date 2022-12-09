@@ -1,7 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
-from schema import Product as ProductSchema
-from schema import Shop
+from webscrapper.schema import Product as ProductSchema
+from webscrapper.schema import Shop
 
 from webscrapper.database.models import Product as ProductModel
 
@@ -25,5 +25,7 @@ def scrap_product(url: str, shop: Shop) -> ProductModel:
         if name_class := soup.find("h1", {"class": product_name_class.class_name}):
             name = name_class.get_text()
     # Check if product already exists in database and create a product history
-    product = ProductSchema(url=url, price=float_price, name=name, shop_id=shop.id, shop=shop)
+    product = ProductSchema(
+        url=url, price=float_price, name=name, shop_id=shop.id, shop=shop
+    )
     return ProductModel(**product.dict())

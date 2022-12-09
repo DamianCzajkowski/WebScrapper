@@ -4,7 +4,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy_utils import create_database, database_exists
 
-from models import Base
+from webscrapper.database.models import Base
 
 DB_PATH = Path(__file__).parent.resolve() / "data" / "scrapper.db"
 
