@@ -16,7 +16,9 @@ from PyQt6.QtWidgets import (
     QTableWidgetItem,
     QFormLayout,
     QDockWidget,
+    QHBoxLayout,
 )
+from PyQt6 import QtGui
 from webscrapper.database.database import initialize_database
 from webscrapper.database.service import ShopService, ProductService
 from webscrapper.terminal.main import Table, WindowSettings
@@ -26,61 +28,81 @@ class Window(QMainWindow):
     def __init__(self, session):
         super().__init__()
         self.session = session
-        self.setFixedSize(1000, 255)
         self.setWindowTitle("WebScrapper")
-        self.generalLayout = QGridLayout()
-        centralWidget = QWidget(self)
-        centralWidget.setLayout(self.generalLayout)
-        self.setCentralWidget(centralWidget)
-        self._createButtons()
-        self._createMainPanel()
 
-    def _createButtons(self):
+        container = QWidget()
+        self.containerLayout = QHBoxLayout()
+
+        # MENU
+        self.menuButtonsLayout = QVBoxLayout()
+        self.menuButtonsWidget = QWidget()
+
         self.buttonMap = {}
-        buttonsLayout = QVBoxLayout()
         keyBoard = ["Products", "Shops", "Settings", "Help", "Exit"]
 
         for value in keyBoard:
             button = QPushButton(value)
-            button.clicked.connect(getattr(self, f"display{value}"))
+            # button.clicked.connect(getattr(self, f"display{value}"))
             self.buttonMap[value] = button
-            buttonsLayout.addWidget(self.buttonMap[value], 0)
+            self.menuButtonsLayout.addWidget(self.buttonMap[value])
+        self.menuButtonsWidget.setLayout(self.menuButtonsLayout)
 
-        self.generalLayout.addLayout(buttonsLayout, 0, 0)
+        # MAIN ITEM
+        self.mainWidget = QWidget()
+        self.mainLayout = QVBoxLayout()
+        hideButton = QPushButton()
+        hideButton.setIcon(QtGui.QIcon("menu.png"))
+        hideButton.clicked.connect(self.hideUnhideMenu)
+        self.mainLayout.addWidget(hideButton)
+        self.mainWidget.setLayout(self.mainLayout)
 
-    def _createMainPanel(self):
-        self.mainPanelLayout = QGridLayout()
+        self.containerLayout.addWidget(self.menuButtonsWidget)
+        self.containerLayout.addWidget(self.mainWidget)
 
-        self.generalLayout.addLayout(self.mainPanelLayout, 0, 1)
+        container.setLayout(self.containerLayout)
+        self.setCentralWidget(container)
 
-    def displayShops(self):
-        self.clearLayout()
-        shops = ShopDisplayService(view=self, session=self.session)
-        table = shops._create_table()
-        self.mainPanelLayout.addWidget(table)
-        shops._creation_form()
+        # self.searchbar = QLineEdit()
+        # centralWidget = QWidget(self)
+        # centralWidget.setLayout(self.generalLayout)
+        # self.setCentralWidget(centralWidget)
+        # self._createMenu()
+        # self._createMainPanel()
 
-    def displayProducts(self):
-        self.clearLayout()
-        shops = ProductDisplayService(view=self, session=self.session)
-        table = shops._create_table()
-        self.mainPanelLayout.addWidget(table)
+    def hideUnhideMenu(self):
+        if self.menuButtonsWidget.isHidden():
+            self.menuButtonsWidget.show()
+        else:
+            self.menuButtonsWidget.hide()
 
-    def displaySettings(self):
-        self.clearLayout()
-        pass
+    # def displayShops(self):
+    #     self.clearLayout()
+    #     shops = ShopDisplayService(view=self, session=self.session)
+    #     table = shops._create_table()
+    #     self.mainPanelLayout.addWidget(table)
+    #     shops._creation_form()
 
-    def displayHelp(self):
-        self.clearLayout()
-        pass
+    # def displayProducts(self):
+    #     self.clearLayout()
+    #     shops = ProductDisplayService(view=self, session=self.session)
+    #     table = shops._create_table()
+    #     self.mainPanelLayout.addWidget(table)
 
-    def displayExit(self):
-        self.clearLayout()
-        self.close()
+    # def displaySettings(self):
+    #     self.clearLayout()
+    #     pass
 
-    def clearLayout(self):
-        for i in reversed(range(self.mainPanelLayout.count())):
-            self.mainPanelLayout.itemAt(i).widget().deleteLater()
+    # def displayHelp(self):
+    #     self.clearLayout()
+    #     pass
+
+    # def displayExit(self):
+    #     self.clearLayout()
+    #     self.close()
+
+    # def clearLayout(self):
+    #     for i in reversed(range(self.mainPanelLayout.count())):
+    #         self.mainPanelLayout.itemAt(i).widget().deleteLater()
 
 
 class TableView(QTableWidget):
@@ -195,7 +217,6 @@ class ProductDisplayService:
 
 
 def main():
-    """PyCalc's main function."""
     session = initialize_database()
     pycalcApp = QApplication([])
     window = Window(session)
