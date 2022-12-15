@@ -1,12 +1,11 @@
 import requests
 from bs4 import BeautifulSoup
+
 from webscrapper.schema import Product as ProductSchema
 from webscrapper.schema import Shop
 
-from webscrapper.database.models import Product as ProductModel
 
-
-def scrap_product(url: str, shop: Shop) -> ProductModel:
+def scrap_product(url: str, shop: Shop) -> ProductSchema:
     header = {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36",
         "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8",
@@ -20,12 +19,12 @@ def scrap_product(url: str, shop: Shop) -> ProductModel:
         if price := soup.find("div", {"class": product_price_class.class_name}):
             price = price.get_text()
             float_price = float(price.split("zł")[0].replace(" ", "").replace(",", "."))
+        elif price := soup.find("span", {"class": product_price_class.class_name}):
+            price = price.get_text()
+            float_price = float(price.split("zł")[0].replace(" ", "").replace(",", "."))
     name = ""
     for product_name_class in shop.product_name_classes:
         if name_class := soup.find("h1", {"class": product_name_class.class_name}):
             name = name_class.get_text()
-    # Check if product already exists in database and create a product history
-    product = ProductSchema(
-        url=url, price=float_price, name=name, shop_id=shop.id, shop=shop
-    )
-    return ProductModel(**product.dict())
+
+    return ProductSchema(url=url, price=float_price, name=name, shop_id=shop.id, shop=shop)
