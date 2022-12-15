@@ -510,5 +510,10 @@ class MyApp:
         self.screen.refresh()
 
 
-if __name__ == "__main__":
+def main():
     curses.wrapper(MyApp)
+    return "EXIT"
+
+
+if __name__ == "__main__":
+    main()

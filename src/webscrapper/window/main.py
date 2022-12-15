@@ -1,63 +1,75 @@
-"""PyCalc is a simple calculator built with Python and PyQt."""
-
-import sys
 from functools import partial
 
-from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QApplication,
-    QGridLayout,
-    QLineEdit,
+    QCheckBox,
+    QHBoxLayout,
+    QLabel,
     QMainWindow,
     QPushButton,
+    QTabWidget,
     QVBoxLayout,
     QWidget,
-    QTableWidget,
-    QTableWidgetItem,
-    QFormLayout,
-    QDockWidget,
-    QHBoxLayout,
 )
-from PyQt6 import QtGui
+
 from webscrapper.database.database import initialize_database
-from webscrapper.database.service import ShopService, ProductService
-from webscrapper.terminal.main import Table, WindowSettings
+from webscrapper.window.window_service import ProductDisplayService, ShopDisplayService
 
 
 class Window(QMainWindow):
     def __init__(self, session):
         super().__init__()
         self.session = session
+        self.restartAsTerminal = False
         self.setWindowTitle("WebScrapper")
 
-        container = QWidget()
-        self.containerLayout = QHBoxLayout()
+        self.windowWidth = 1200
+        self.windowHeight = int(0.618 * self.windowWidth)
+        self.resize(self.windowWidth, self.windowHeight)
 
+        self.setupUI()
+
+    def setupUI(self):
         # MENU
         self.menuButtonsLayout = QVBoxLayout()
         self.menuButtonsWidget = QWidget()
 
         self.buttonMap = {}
-        keyBoard = ["Products", "Shops", "Settings", "Help", "Exit"]
+        keyBoard = ["Products", "Shops", "Settings", "Help"]
+        self.tabs = []
 
-        for value in keyBoard:
-            button = QPushButton(value)
-            # button.clicked.connect(getattr(self, f"display{value}"))
+        for idx, value in enumerate(keyBoard):
+            button = QPushButton(value, self)
+            self.tabs.append(getattr(self, f"display{value}")())
+            button.clicked.connect(partial(self.setTabIndex, idx))
             self.buttonMap[value] = button
             self.menuButtonsLayout.addWidget(self.buttonMap[value])
+
+        exitButton = QPushButton("Exit", self)
+        exitButton.clicked.connect(self.exit)
+        self.menuButtonsLayout.addWidget(exitButton)
+        self.menuButtonsLayout.addStretch(5)
+        self.menuButtonsLayout.setSpacing(20)
         self.menuButtonsWidget.setLayout(self.menuButtonsLayout)
 
         # MAIN ITEM
-        self.mainWidget = QWidget()
-        self.mainLayout = QVBoxLayout()
-        hideButton = QPushButton()
-        hideButton.setIcon(QtGui.QIcon("menu.png"))
-        hideButton.clicked.connect(self.hideUnhideMenu)
-        self.mainLayout.addWidget(hideButton)
-        self.mainWidget.setLayout(self.mainLayout)
+        self.mainWidget = QTabWidget()
+        self.mainWidget.tabBar().setObjectName("mainTab")
 
+        for tab in self.tabs:
+            self.mainWidget.addTab(tab, "")
+
+        self.mainWidget.setCurrentIndex(0)
+        self.mainWidget.setStyleSheet("""QTabBar::tab{width: 0; height: 0; margin: 0; padding: 0; border: none;}""")
+
+        # CONTAINER
+        container = QWidget()
+        self.containerLayout = QHBoxLayout()
         self.containerLayout.addWidget(self.menuButtonsWidget)
         self.containerLayout.addWidget(self.mainWidget)
+
+        self.containerLayout.setStretch(0, 40)
+        self.containerLayout.setStretch(1, 200)
 
         container.setLayout(self.containerLayout)
         self.setCentralWidget(container)
@@ -69,159 +81,49 @@ class Window(QMainWindow):
         # self._createMenu()
         # self._createMainPanel()
 
-    def hideUnhideMenu(self):
-        if self.menuButtonsWidget.isHidden():
-            self.menuButtonsWidget.show()
-        else:
-            self.menuButtonsWidget.hide()
+    def setTabIndex(self, idx):
+        self.mainWidget.setCurrentIndex(idx)
 
-    # def displayShops(self):
-    #     self.clearLayout()
-    #     shops = ShopDisplayService(view=self, session=self.session)
-    #     table = shops._create_table()
-    #     self.mainPanelLayout.addWidget(table)
-    #     shops._creation_form()
+    def displayShops(self):
+        return ShopDisplayService(self, session=self.session)
 
-    # def displayProducts(self):
-    #     self.clearLayout()
-    #     shops = ProductDisplayService(view=self, session=self.session)
-    #     table = shops._create_table()
-    #     self.mainPanelLayout.addWidget(table)
+    def displayProducts(self):
+        return ProductDisplayService(self, session=self.session)
 
-    # def displaySettings(self):
-    #     self.clearLayout()
-    #     pass
+    def displaySettings(self):
+        mainLayout = QVBoxLayout()
+        mainLayout.addWidget(QLabel("Settings"))
+        restartButton = QCheckBox("Restart as terminal app")
+        restartButton.stateChanged.connect(lambda: self.setRestartAsTerminal(restartButton))
+        mainLayout.addWidget(restartButton)
+        mainLayout.addStretch(5)
+        main = QWidget()
+        main.setLayout(mainLayout)
+        return main
 
-    # def displayHelp(self):
-    #     self.clearLayout()
-    #     pass
+    def setRestartAsTerminal(self, btn):
+        self.restartAsTerminal = btn.isChecked()
 
-    # def displayExit(self):
-    #     self.clearLayout()
-    #     self.close()
+    def displayHelp(self):
+        mainLayout = QVBoxLayout()
+        mainLayout.addWidget(QLabel("Help"))
+        mainLayout.addStretch(5)
+        main = QWidget()
+        main.setLayout(mainLayout)
+        return main
 
-    # def clearLayout(self):
-    #     for i in reversed(range(self.mainPanelLayout.count())):
-    #         self.mainPanelLayout.itemAt(i).widget().deleteLater()
-
-
-class TableView(QTableWidget):
-    def __init__(self, data, *args):
-        QTableWidget.__init__(self, *args)
-        self.data = data
-        self.setData()
-        self.resizeColumnsToContents()
-        self.resizeRowsToContents()
-
-    def setData(self):
-        horHeaders = []
-        for n, key in enumerate(self.data.keys()):
-            horHeaders.append(key)
-            for m, item in enumerate(self.data[key]):
-                newitem = QTableWidgetItem(item)
-                newitem.setFlags(Qt.ItemFlag.ItemIsEnabled)
-                self.setItem(m, n, newitem)
-
-        self.setHorizontalHeaderLabels(horHeaders)
-
-    def flags(self, index):
-        return Qt.ItemFlag.ItemIsSelectable
-
-
-class ShopDisplayService:
-    def __init__(self, view, session):
-        self._view = view
-        self.service = ShopService(session)
-
-    # def _slotDoubleClicked(self, *args, **kwargs):
-    #     breakpoint()
-
-    def _buildExpression(self, subExpression):
-        pass
-
-    def _connectSignalsAndSlots(self):
-        pass
-        # for keySymbol, button in self._view.buttonMap.items():
-        #     if keySymbol not in {"=", "C"}:
-        #         button.clicked.connect(partial(self._buildExpression, keySymbol))
-        # self._view.buttonMap["="].clicked.connect(self._calculateResult)
-        # self._view.display.returnPressed.connect(self._calculateResult)
-        # self._view.buttonMap["C"].clicked.connect(self._view.clearDisplay)
-
-    def _creation_form(self):
-        dock = QDockWidget("New Shop")
-        dock.setFeatures(QDockWidget.DockWidgetFeature.NoDockWidgetFeatures)
-        self._view.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, dock)
-
-        form = QWidget()
-        layout = QFormLayout(form)
-        form.setLayout(layout)
-
-        self.shop_name = QLineEdit(form)
-
-        layout.addRow("Shop Name:", self.shop_name)
-
-        btn_add = QPushButton("Add")
-        # btn_add.clicked.connect(self.add_employee)
-        layout.addRow(btn_add)
-
-        dock.setWidget(form)
-
-    def _create_table(self):
-        shops = self.service.get_all_shops()
-        data = {"id": [], "name": []}
-        for shop in shops:
-            data["id"].append(str(shop.id))
-            data["name"].append(shop.name)
-        # breakpoint()
-        table = TableView(data, len(data["id"]), 2)
-        table.setData()
-        # table.doubleClicked.connect(self._slotDoubleClicked)
-        return table
-
-
-class ProductDisplayService:
-    def __init__(self, view, session):
-        self._view = view
-        self.service = ProductService(session)
-
-    # def _slotDoubleClicked(self, *args, **kwargs):
-    #     breakpoint()
-
-    def _buildExpression(self, subExpression):
-        pass
-
-    def _connectSignalsAndSlots(self):
-        pass
-        # for keySymbol, button in self._view.buttonMap.items():
-        #     if keySymbol not in {"=", "C"}:
-        #         button.clicked.connect(partial(self._buildExpression, keySymbol))
-        # self._view.buttonMap["="].clicked.connect(self._calculateResult)
-        # self._view.display.returnPressed.connect(self._calculateResult)
-        # self._view.buttonMap["C"].clicked.connect(self._view.clearDisplay)
-
-    def _create_table(self):
-        products = self.service.get_all_products()
-        data = {"id": [], "name": [], "url": [], "price": []}
-        for product in products:
-            data["id"].append(str(product.id))
-            data["name"].append(product.name)
-            data["url"].append(product.url)
-            data["price"].append(str(product.price))
-
-        # breakpoint()
-        table = TableView(data, len(data["id"]), 4)
-        table.setData()
-        # table.doubleClicked.connect(self._slotDoubleClicked)
-        return table
+    def exit(self):
+        self.close()
 
 
 def main():
     session = initialize_database()
-    pycalcApp = QApplication([])
+    app = QApplication([])
     window = Window(session)
     window.show()
-    sys.exit(pycalcApp.exec())
+    app.exec()
+
+    return "TERMINAL" if window.restartAsTerminal else "EXIT"
 
 
 if __name__ == "__main__":
